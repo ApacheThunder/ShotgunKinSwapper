@@ -12,40 +12,25 @@ namespace ShotgunKinSwapper {
 
         public const string GUID = "ApacheThunder.etg.ShotgunKinSwapper";
         public const string ModName = "ShotgunKinSwapper";
-        public const string VERSION = "1.0.0";
+        public const string VERSION = "1.1.0";
 
         public static tk2dSpriteCollectionData shotgunkinskinCollection;
 
-        private static Hook GameManagerHook;
+        public static Hook GameManagerHook;
         
         
         public void Start() { ETGModMainBehaviour.WaitForGameManagerStart(GMStart); }
 
         public void GMStart(GameManager gameManager) {
-            DoFoyerChecks();
-            gameManager.OnNewLevelFullyLoaded += OnLevelFullyLoaded;
-
             ETGMod.Assets.SetupSpritesFromAssembly(Assembly.GetExecutingAssembly(), ModName + "/Sprites");
+            DoFoyerChecks();
         }
         
         private void GameManager_Awake(Action<GameManager> orig, GameManager self) {
             orig(self);
-            self.OnNewLevelFullyLoaded += OnLevelFullyLoaded;
+            DoFoyerChecks();
         }
-
         
-        public void OnLevelFullyLoaded() {
-            if (GameManagerHook == null) {
-                GameManagerHook = new Hook(
-                    typeof(GameManager).GetMethod("Awake", BindingFlags.NonPublic | BindingFlags.Instance),
-                    typeof(ShotgunKinSwapper).GetMethod(nameof(GameManager_Awake), BindingFlags.NonPublic | BindingFlags.Instance),
-                    typeof(GameManager)
-                );
-            }
-            if (GameManager.Instance.IsFoyer) { DoFoyerChecks(); }
-         
-        }
-
         public void DoFoyerChecks() {
             GameObject FoyerCheckController = new GameObject("ShotgunMod Foyer Checker", new Type[] { typeof(ShotGunEnableController) });
         }
@@ -65,7 +50,13 @@ namespace ShotgunKinSwapper {
         public void Update() {
             if (m_HasTriggerd) { return; }
             if (Foyer.DoIntroSequence && Foyer.DoMainMenu) { return; }
-            
+            if (ShotgunKinSwapper.GameManagerHook == null) {
+                ShotgunKinSwapper.GameManagerHook = new Hook(
+                    typeof(GameManager).GetMethod("Awake", BindingFlags.NonPublic | BindingFlags.Instance),
+                    typeof(ShotgunKinSwapper).GetMethod("GameManager_Awake", BindingFlags.NonPublic | BindingFlags.Instance),
+                    typeof(GameManager)
+                );
+            }
             CharacterCostumeSwapper[] m_Characters = FindObjectsOfType<CharacterCostumeSwapper>();
             if (m_Characters != null && m_Characters.Length > 0) {
                 CharacterCostumeSwapper BulletManSelector = null;
